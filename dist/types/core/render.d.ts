@@ -1,0 +1,4 @@
+import type { SolidNode } from './node/index.js';
+import type { JSX } from 'solid-js';
+export declare const render: (code: () => JSX.Element, node?: SolidNode) => () => void;
+export declare const effect: <T>(fn: (prev?: T) => T, init?: T) => void, memo: <T>(fn: () => T, equal: boolean) => () => T, createComponent: <T>(Comp: (props: T) => SolidNode, props: T) => SolidNode, createElement: (tag: string) => SolidNode, createTextNode: (value: string) => SolidNode, insertNode: (parent: SolidNode, node: SolidNode, anchor?: SolidNode) => void, insert: <T>(parent: any, accessor: T | (() => T), marker?: any) => SolidNode, spread: <T>(node: any, accessor: T | (() => T), skipChildren?: Boolean) => void, setProp: <T>(node: SolidNode, name: string, value: T, prev?: T) => T, mergeProps: (...sources: unknown[]) => unknown, use: <A, T>(fn: (element: SolidNode, arg: A) => T, element: SolidNode, arg: A) => T;
