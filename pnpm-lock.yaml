@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@lightningjs/renderer':
-    specifier: ^0.5.0
-    version: 0.5.0
+    specifier: pecoram/renderer#v0.5.2
+    version: github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2
   '@lightningjs/solid':
     specifier: file:./
     version: file:(solid-js@1.8.6)
@@ -1381,14 +1381,6 @@ packages:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
-
-  /@lightningjs/renderer@0.5.0:
-    resolution: {integrity: sha512-xlsdDibc3ftBdcWvS4PWCoLjZ/uXp4Jl0I7+7wfQuoRGHst9kQ31+clB+kpJSpCIR+CxtYxMpYUVIjC5QC2eOA==}
-    engines: {npm: please-use-pnpm, pnpm: '>= 8.9.2'}
-    dependencies:
-      '@lightningjs/threadx': 0.3.4
-      '@protobufjs/eventemitter': 1.1.0
-    dev: false
 
   /@lightningjs/threadx@0.3.4:
     resolution: {integrity: sha512-x9ylADrRxSrIczcMHgkNYpmnvoPvWKuasxmEf3dnixazpYJCw9HLoWNOi2UsD0U4oEL/tMQZA0sZbO7VVGMTag==}
@@ -3373,6 +3365,18 @@ packages:
     peerDependencies:
       solid-js: '*'
     dependencies:
-      '@lightningjs/renderer': 0.5.0
+      '@lightningjs/renderer': github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2
       solid-js: 1.8.6
+    dev: false
+
+  github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2:
+    resolution: {tarball: https://codeload.github.com/pecoram/renderer/tar.gz/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2}
+    name: '@lightningjs/renderer'
+    version: 0.5.2
+    engines: {npm: please-use-pnpm, pnpm: '>= 8.9.2'}
+    prepare: true
+    requiresBuild: true
+    dependencies:
+      '@lightningjs/threadx': 0.3.4
+      '@protobufjs/eventemitter': 1.1.0
     dev: false

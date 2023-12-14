@@ -89,6 +89,8 @@ const LightningRendererNonAnimatingProps = [
     'maxLines',
     'maxLinesSuffix',
     'textOverflow',
+    'verticalAling',
+    'textBaseline',
     'wordWrap',
 ];
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
