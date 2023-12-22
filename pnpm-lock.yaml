@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@lightningjs/renderer':
-    specifier: pecoram/renderer#v0.5.2
-    version: github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2
+    specifier: pecoram/renderer#v0.5.4
+    version: github.com/pecoram/renderer/402db721b657ba09417dc1017d2d94545056461b
   '@lightningjs/solid':
     specifier: file:./
     version: file:(solid-js@1.8.6)
@@ -3365,15 +3365,15 @@ packages:
     peerDependencies:
       solid-js: '*'
     dependencies:
-      '@lightningjs/renderer': github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2
+      '@lightningjs/renderer': github.com/pecoram/renderer/402db721b657ba09417dc1017d2d94545056461b
       solid-js: 1.8.6
     dev: false
 
-  github.com/pecoram/renderer/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2:
-    resolution: {tarball: https://codeload.github.com/pecoram/renderer/tar.gz/a28a5f0d19e5a3a5aacb43f1cead0449d1c4b1c2}
+  github.com/pecoram/renderer/402db721b657ba09417dc1017d2d94545056461b:
+    resolution: {tarball: https://codeload.github.com/pecoram/renderer/tar.gz/402db721b657ba09417dc1017d2d94545056461b}
     name: '@lightningjs/renderer'
-    version: 0.5.2
-    engines: {npm: please-use-pnpm, pnpm: '>= 8.9.2'}
+    version: 0.5.4
+    engines: {pnpm: '>= 8.9.2'}
     prepare: true
     requiresBuild: true
     dependencies:

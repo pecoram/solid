@@ -123,7 +123,7 @@ const LightningRendererNonAnimatingProps = [
   'maxLines',
   'maxLinesSuffix',
   'textOverflow',
-  'verticalAling',
+  'verticalAlign',
   'textBaseline',
   'wordWrap',
 ];

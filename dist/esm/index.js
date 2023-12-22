@@ -436,7 +436,7 @@ function borderAccessor(direction = '') {
   };
 }
 const LightningRendererNumberProps = ['alpha', 'color', 'colorTop', 'colorRight', 'colorLeft', 'colorBottom', 'colorTl', 'colorTr', 'colorBl', 'colorBr', 'height', 'fontSize', 'lineHeight', 'mount', 'mountX', 'mountY', 'pivot', 'pivotX', 'pivotY', 'rotation', 'scale', 'width', 'worldX', 'worldY', 'x', 'y', 'zIndex', 'zIndexLocked'];
-const LightningRendererNonAnimatingProps = ['clipping', 'contain', 'fontFamily', 'src', 'text', 'textAlign', 'texture', 'maxLines', 'maxLinesSuffix', 'textOverflow', 'verticalAling', 'textBaseline', 'wordWrap'];
+const LightningRendererNonAnimatingProps = ['clipping', 'contain', 'fontFamily', 'src', 'text', 'textAlign', 'texture', 'maxLines', 'maxLinesSuffix', 'textOverflow', 'verticalAlign', 'textBaseline', 'wordWrap'];
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 

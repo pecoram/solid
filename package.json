@@ -1,6 +1,6 @@
 {
   "name": "@lightningjs/solid",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Lightning renderer for solid universal",
   "type": "module",
   "source": "src/index.ts",
@@ -62,7 +62,7 @@
     "*.{js,cjs,md}": "prettier --write"
   },
   "dependencies": {
-    "@lightningjs/renderer": "pecoram/renderer#v0.5.2",
+    "@lightningjs/renderer": "pecoram/renderer#v0.5.4",
     "@lightningjs/solid": "file:./"
   },
   "peerDependencies": {
