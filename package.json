@@ -18,19 +18,19 @@
   },
   "sideEffects": false,
   "scripts": {
-    "start": "npm run watch",
+    "start": "pnpm run watch",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "npm run lint:prettier && npm run lint:eslint",
-    "lint:fix": "npm run lint:fix:prettier && npm run lint:fix:eslint",
+    "lint": "pnpm run lint:prettier && npm run lint:eslint",
+    "lint:fix": "pnpm run lint:fix:prettier && npm run lint:fix:eslint",
     "lint:prettier": "prettier --check \"**/*.{ts,js,cjs,md}\"",
     "lint:fix:prettier": "prettier --write \"**/*.{ts,js,cjs,md}\"",
     "lint:eslint": "eslint .",
     "lint:fix:eslint": "eslint --fix .",
-    "build": "npm run tsc && rollup -c",
+    "build": "pnpm run tsc && rollup -c",
     "tsc": "tsc",
     "watch": "tsc -w",
     "prepare": "husky install",
-    "prepack": "npm run build"
+    "prepack": "pnpm run build"
   },
   "keywords": [
     "lightning",
@@ -62,7 +62,7 @@
     "*.{js,cjs,md}": "prettier --write"
   },
   "dependencies": {
-    "@lightningjs/renderer": "pecoram/renderer#v0.5.4",
+    "@lightningjs/renderer": "pecoram/renderer#v0.5.5",
     "@lightningjs/solid": "file:./"
   },
   "peerDependencies": {
