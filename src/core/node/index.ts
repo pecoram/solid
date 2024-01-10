@@ -528,12 +528,12 @@ export class ElementNode extends Object {
           node._autosized = true;
         }
 
-        if (!props.height && props.contain === 'both') {
-          props.height =
-            (parent.height || 0) - props.y - (props.marginBottom || 0);
-          node._height = props.height;
-          node._autosized = true;
-        }
+        // if (!props.height && props.contain === 'both') {
+        //   props.height =
+        //     (parent.height || 0) - props.y - (props.marginBottom || 0);
+        //   node._height = props.height;
+        //   node._autosized = true;
+        // }
       }
 
       log('Rendering: ', this, props);
