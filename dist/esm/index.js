@@ -305,24 +305,28 @@ function calculateFlex (node) {
     }
     // text node hasnt loaded yet - skip layout
     if (c.name === 'text' && !(c.width || c.height)) {
-      return;
+      return false;
     }
     children.push(c);
   }
   const numChildren = children.length;
   const direction = node.flexDirection || 'row';
-  const dimension = direction === 'row' ? 'width' : 'height';
-  const crossDimension = direction === 'row' ? 'height' : 'width';
-  const marginOne = direction === 'row' ? 'marginLeft' : 'marginTop';
-  const marginTwo = direction === 'row' ? 'marginRight' : 'marginBottom';
-  const prop = direction === 'row' ? 'x' : 'y';
-  const crossProp = direction === 'row' ? 'y' : 'x';
+  const isRow = direction === 'row';
+  const dimension = isRow ? 'width' : 'height';
+  const crossDimension = isRow ? 'height' : 'width';
+  const marginOne = isRow ? 'marginLeft' : 'marginTop';
+  const marginTwo = isRow ? 'marginRight' : 'marginBottom';
+  const prop = isRow ? 'x' : 'y';
+  const crossProp = isRow ? 'y' : 'x';
   const containerSize = node[dimension] || 0;
   const containerCrossSize = node[crossDimension] || 0;
-  const itemSize = children.reduce((prev, c) => prev + (c[dimension] || 0), 0);
   const gap = node.gap || 0;
   const justify = node.justifyContent || 'flexStart';
   const align = node.alignItems;
+  let itemSize = 0;
+  if (['center', 'spaceBetween', 'spaceEvenly'].includes(justify)) {
+    itemSize = children.reduce((prev, c) => prev + (c[dimension] || 0), 0);
+  }
 
   // Only align children if container has a cross size
   const crossAlignChild = containerCrossSize && align ? c => {
@@ -341,8 +345,15 @@ function calculateFlex (node) {
       start += (c[dimension] || 0) + gap + (c[marginOne] || 0) + (c[marginTwo] || 0);
       crossAlignChild(c);
     });
-  }
-  if (justify === 'flexEnd') {
+    // Update container size
+    if (node._autosized) {
+      const containerSize = start - gap;
+      if (containerSize !== node[dimension]) {
+        node[dimension] = containerSize;
+        return true;
+      }
+    }
+  } else if (justify === 'flexEnd') {
     let start = containerSize;
     for (let i = numChildren - 1; i >= 0; i--) {
       const c = children[i];
@@ -351,16 +362,14 @@ function calculateFlex (node) {
       start -= (c[dimension] || 0) + gap + (c[marginOne] || 0) + (c[marginTwo] || 0);
       crossAlignChild(c);
     }
-  }
-  if (justify === 'center') {
+  } else if (justify === 'center') {
     let start = (containerSize - (itemSize + gap * (numChildren - 1))) / 2;
     children.forEach(c => {
       c[prop] = start;
       start += (c[dimension] || 0) + gap;
       crossAlignChild(c);
     });
-  }
-  if (justify === 'spaceBetween') {
+  } else if (justify === 'spaceBetween') {
     const toPad = (containerSize - itemSize) / (numChildren - 1);
     let start = 0;
     children.forEach(c => {
@@ -368,8 +377,7 @@ function calculateFlex (node) {
       start += (c[dimension] || 0) + toPad;
       crossAlignChild(c);
     });
-  }
-  if (justify === 'spaceEvenly') {
+  } else if (justify === 'spaceEvenly') {
     const toPad = (containerSize - itemSize) / (numChildren + 1);
     let start = toPad;
     children.forEach(c => {
@@ -378,6 +386,9 @@ function calculateFlex (node) {
       crossAlignChild(c);
     });
   }
+
+  // Container was not updated
+  return false;
 }
 
 /*
@@ -587,7 +598,8 @@ class ElementNode extends Object {
   }
   setFocus() {
     if (this.rendered) {
-      setActiveElement(this);
+      // Delay setting focus so children can render (useful for Row + Column)
+      queueMicrotask(() => setActiveElement(this));
     } else {
       this.autofocus = true;
     }
@@ -662,7 +674,9 @@ class ElementNode extends Object {
       log('Layout: ', this);
       isFunc(this.onBeforeLayout) && this.onBeforeLayout.call(this, child, dimensions);
       if (this.display === 'flex') {
-        calculateFlex(this);
+        if (calculateFlex(this)) {
+          this.parent?.updateLayout();
+        }
       }
       isFunc(this.onLayout) && this.onLayout.call(this, child, dimensions);
     }
@@ -738,6 +752,18 @@ class ElementNode extends Object {
         ...props,
         text: node.getText()
       };
+      if (props.contain) {
+        if (!props.width) {
+          props.width = (parent.width || 0) - props.x - (props.marginRight || 0);
+          node._width = props.width;
+          node._autosized = true;
+        }
+        if (!props.height && props.contain === 'both') {
+          props.height = (parent.height || 0) - props.y - (props.marginBottom || 0);
+          node._height = props.height;
+          node._autosized = true;
+        }
+      }
       log('Rendering: ', this, props);
       node.lng = renderer.createTextNode(props);
       isFunc(this.onCreate) && this.onCreate.call(this, node);
@@ -755,10 +781,12 @@ class ElementNode extends Object {
         if (isNaN(props.width)) {
           props.width = (parent.width || 0) - props.x;
           node._width = props.width;
+          node._autosized = true;
         }
         if (isNaN(props.height)) {
           props.height = (parent.height || 0) - props.y;
           node._height = props.height;
+          node._autosized = true;
         }
         if (!props.color) {
           // Default color to transparent - If you later set a src, you'll need

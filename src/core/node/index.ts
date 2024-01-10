@@ -335,7 +335,8 @@ export class ElementNode extends Object {
 
   setFocus() {
     if (this.rendered) {
-      setActiveElement<ElementNode>(this);
+      // Delay setting focus so children can render (useful for Row + Column)
+      queueMicrotask(() => setActiveElement<ElementNode>(this));
     } else {
       this.autofocus = true;
     }
@@ -430,7 +431,9 @@ export class ElementNode extends Object {
         this.onBeforeLayout.call(this, child, dimensions);
 
       if (this.display === 'flex') {
-        calculateFlex(this);
+        if (calculateFlex(this)) {
+          this.parent?.updateLayout();
+        }
       }
 
       isFunc(this.onLayout) && this.onLayout.call(this, child, dimensions);
@@ -516,6 +519,23 @@ export class ElementNode extends Object {
         ...props,
         text: node.getText(),
       };
+
+      if (props.contain) {
+        if (!props.width) {
+          props.width =
+            (parent.width || 0) - props.x - (props.marginRight || 0);
+          node._width = props.width;
+          node._autosized = true;
+        }
+
+        if (!props.height && props.contain === 'both') {
+          props.height =
+            (parent.height || 0) - props.y - (props.marginBottom || 0);
+          node._height = props.height;
+          node._autosized = true;
+        }
+      }
+
       log('Rendering: ', this, props);
       node.lng = renderer.createTextNode(props);
 
@@ -536,11 +556,13 @@ export class ElementNode extends Object {
         if (isNaN(props.width)) {
           props.width = (parent.width || 0) - props.x;
           node._width = props.width;
+          node._autosized = true;
         }
 
         if (isNaN(props.height)) {
           props.height = (parent.height || 0) - props.y;
           node._height = props.height;
+          node._autosized = true;
         }
 
         if (!props.color) {

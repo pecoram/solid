@@ -1,2 +1,2 @@
 import type { ElementNode } from './node/index.js';
-export default function (node: ElementNode): void;
+export default function (node: ElementNode): boolean;

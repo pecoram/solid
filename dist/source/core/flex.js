@@ -25,24 +25,28 @@ export default function (node) {
         }
         // text node hasnt loaded yet - skip layout
         if (c.name === 'text' && !(c.width || c.height)) {
-            return;
+            return false;
         }
         children.push(c);
     }
     const numChildren = children.length;
     const direction = node.flexDirection || 'row';
-    const dimension = direction === 'row' ? 'width' : 'height';
-    const crossDimension = direction === 'row' ? 'height' : 'width';
-    const marginOne = direction === 'row' ? 'marginLeft' : 'marginTop';
-    const marginTwo = direction === 'row' ? 'marginRight' : 'marginBottom';
-    const prop = direction === 'row' ? 'x' : 'y';
-    const crossProp = direction === 'row' ? 'y' : 'x';
+    const isRow = direction === 'row';
+    const dimension = isRow ? 'width' : 'height';
+    const crossDimension = isRow ? 'height' : 'width';
+    const marginOne = isRow ? 'marginLeft' : 'marginTop';
+    const marginTwo = isRow ? 'marginRight' : 'marginBottom';
+    const prop = isRow ? 'x' : 'y';
+    const crossProp = isRow ? 'y' : 'x';
     const containerSize = node[dimension] || 0;
     const containerCrossSize = node[crossDimension] || 0;
-    const itemSize = children.reduce((prev, c) => prev + (c[dimension] || 0), 0);
     const gap = node.gap || 0;
     const justify = node.justifyContent || 'flexStart';
     const align = node.alignItems;
+    let itemSize = 0;
+    if (['center', 'spaceBetween', 'spaceEvenly'].includes(justify)) {
+        itemSize = children.reduce((prev, c) => prev + (c[dimension] || 0), 0);
+    }
     // Only align children if container has a cross size
     const crossAlignChild = containerCrossSize && align
         ? (c) => {
@@ -65,8 +69,16 @@ export default function (node) {
                 (c[dimension] || 0) + gap + (c[marginOne] || 0) + (c[marginTwo] || 0);
             crossAlignChild(c);
         });
+        // Update container size
+        if (node._autosized) {
+            const containerSize = start - gap;
+            if (containerSize !== node[dimension]) {
+                node[dimension] = containerSize;
+                return true;
+            }
+        }
     }
-    if (justify === 'flexEnd') {
+    else if (justify === 'flexEnd') {
         let start = containerSize;
         for (let i = numChildren - 1; i >= 0; i--) {
             const c = children[i];
@@ -77,7 +89,7 @@ export default function (node) {
             crossAlignChild(c);
         }
     }
-    if (justify === 'center') {
+    else if (justify === 'center') {
         let start = (containerSize - (itemSize + gap * (numChildren - 1))) / 2;
         children.forEach((c) => {
             c[prop] = start;
@@ -85,7 +97,7 @@ export default function (node) {
             crossAlignChild(c);
         });
     }
-    if (justify === 'spaceBetween') {
+    else if (justify === 'spaceBetween') {
         const toPad = (containerSize - itemSize) / (numChildren - 1);
         let start = 0;
         children.forEach((c) => {
@@ -94,7 +106,7 @@ export default function (node) {
             crossAlignChild(c);
         });
     }
-    if (justify === 'spaceEvenly') {
+    else if (justify === 'spaceEvenly') {
         const toPad = (containerSize - itemSize) / (numChildren + 1);
         let start = toPad;
         children.forEach((c) => {
@@ -103,4 +115,6 @@ export default function (node) {
             crossAlignChild(c);
         });
     }
+    // Container was not updated
+    return false;
 }
