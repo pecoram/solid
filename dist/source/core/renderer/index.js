@@ -14,11 +14,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-import { MainRenderDriver, RendererMain, } from '@lightningjs/renderer';
+import { MainRenderDriver as MainCoreDriver, RendererMain, } from '@lightningjs/renderer';
 export let renderer;
 export let createShader;
 export function startLightningRenderer(options = {}) {
-    const driver = new MainRenderDriver();
+    const driver = new MainCoreDriver();
     renderer = new RendererMain(options, options.rootId || 'app', driver);
     createShader = renderer.createShader.bind(renderer);
     return renderer;
