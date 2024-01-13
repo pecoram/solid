@@ -298,7 +298,7 @@ export class ElementNode extends Object {
     name: string,
     value: AnimatableNumberProp | number | string,
   ) {
-    if (this.rendered && this.lng) {
+    if (config.animationsEnabled && this.rendered && this.lng) {
       if (isArray(value)) {
         return this.createAnimation({ [name]: value[0] }, value[1]).start();
       }
