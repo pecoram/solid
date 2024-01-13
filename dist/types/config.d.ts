@@ -4,6 +4,7 @@ import { type ElementNode } from './core/node/index.js';
 interface Config {
     debug: boolean;
     animationSettings: Partial<AnimationSettings>;
+    animationsEnabled: boolean;
     fontSettings: Partial<IntrinsicTextNodeStyleProps>;
     stateMapperHook?: (node: ElementNode, states: Array<string>) => Array<string>;
 }
