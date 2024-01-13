@@ -567,16 +567,21 @@ class ElementNode extends Object {
     this._sendToLightning('shader', this._shader);
   }
   _sendToLightningAnimatable(name, value) {
-    if (config.animationsEnabled && this.rendered && this.lng) {
-      if (isArray(value)) {
-        return this.createAnimation({
-          [name]: value[0]
-        }, value[1]).start();
+    if (this.rendered && this.lng) {
+      if (config.animationsEnabled) {
+        if (isArray(value)) {
+          return this.createAnimation({
+            [name]: value[0]
+          }, value[1]).start();
+        }
+        if (this._animate) {
+          return this.createAnimation({
+            [name]: value
+          }).start();
+        }
       }
-      if (this._animate) {
-        return this.createAnimation({
-          [name]: value
-        }).start();
+      if (isArray(value)) {
+        value = value[0];
       }
       this.lng[name] = value;
     } else {
