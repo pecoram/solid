@@ -62,8 +62,8 @@
     "*.{js,cjs,md}": "prettier --write"
   },
   "dependencies": {
-    "@lightningjs/renderer": "pecoram/renderer#v0.5.5",
-    "@lightningjs/solid": "file:./"
+    "@solid-primitives/memo": "^1.3.6",
+    "babel-preset-solid": "^1.8.12"
   },
   "peerDependencies": {
     "solid-js": "*"

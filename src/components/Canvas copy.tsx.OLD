@@ -32,15 +32,18 @@ export interface CanvasProps {
   ref?: (el: ElementNode) => void;
 }
 
-export const Canvas = (props: CanvasProps) => {
-  let root: HTMLDivElement | undefined;
+
+const Canvas = (props: CanvasProps): JSX.Element => {
 
   createEffect(() => {
-    isFunc(props.onFirstRender) && props.onFirstRender(root);
-  })
+    isFunc(props.onFirstRender) && props.onFirstRender();
+  });
+
   return (
-    <div ref={root} style={{inset:0, padding:0, width:'100vw', height:'100vh', background:'#000'}}>
-      {props.children}
-    </div>
-  )
+      <div style={{width: '100vw', height: '100vh', background: "#000"}}>
+        {props.children}
+      </div>
+  );
 };
+
+export {Canvas}

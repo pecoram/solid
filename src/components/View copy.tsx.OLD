@@ -1,0 +1,76 @@
+/*
+ * Copyright 2023 Comcast Cable Communications Management, LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { type JSXElement } from "solid-js";
+import type { IntrinsicNodeProps } from "../intrinsicTypes.js";
+import { isNumber } from "../core/utils.js";
+import { stringToColor } from "../utils.js";
+
+
+const View = (props:IntrinsicNodeProps): JSXElement => {
+
+    const style = props.style ?? {};
+    const zIndex = style.zIndex  ?? undefined;
+    const x = isNumber(style.x) ? `${style.x}px` : undefined;
+    const y = isNumber(style.y) ? `${style.y}px` : undefined;
+    const mountX = isNumber(style.mountX) ? style.mountX : undefined;
+    const mountY = isNumber(style.mountY) ? style.mountY : undefined;
+    const width = props.width ?? style.width;
+    const height = props.height ?? style.height;
+    const w = isNumber(width) ? `${width}px`: '100%';
+    const h = isNumber(height) ? `${height}px` : '100%';
+    const color =  stringToColor(props.color);
+    const alpha = props.alpha ?? 1;
+    let position = (x && y) ? 'absolute' : 'relative';
+    const top = y;
+    const bottom = undefined;
+    const left = x;
+    const right = undefined;
+
+    console.log("====================");
+    console.log(props.src);
+    console.log(`x:[${x}]  y:[${y}]`)
+    console.log("====================");
+    console.log(props);
+    if(isNumber(mountX) && isNumber(mountY)){
+        console.log("mounttt");
+        position = "absolute";
+     }
+
+    const styles =  {
+      position: position,
+      top,
+      left,
+      bottom,
+      right,
+      width: w,
+      height: h,
+      "z-index": zIndex,
+      "background-color": color,
+      "opacity": alpha,
+    }
+
+    console.log(styles);
+
+    //@ts-ignore
+    return <div style={styles} ref={props.ref}>
+      {props.children}
+      {props.src && <img crossorigin="anonymous" src={props.src} style={{"max-width": '100%',"max-height": '100%'}}/>}
+    </div>
+}
+
+export {View}

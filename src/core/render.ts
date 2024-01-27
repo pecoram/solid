@@ -16,31 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createRenderer } from 'solid-js/universal';
-import universalLightning from './universal/lightning.js';
-import universalInspector, {
-  attachInspector,
-} from './universal/dom-inspector.js';
-import type { SolidNode } from './node/index.js';
-import type { JSX } from 'solid-js';
-import { isDev } from '../config.js';
+import { createRenderer } from "solid-js/universal";
+import { ElementNode } from "./node/index.js";
 
-const loadInspector = isDev;
-if (loadInspector) {
-  attachInspector();
-}
-const solidRenderer = createRenderer<SolidNode>(
-  loadInspector ? universalInspector : universalLightning,
-);
-
-// TODO: This is a hack to get the `render()` function to work as it is used now in the demo app
-// There's gotta be a better way to fix it
-export const render = solidRenderer.render as unknown as (
-  code: () => JSX.Element,
-  node?: SolidNode,
-) => () => void;
+const PROPERTIES = new Set(["className", "textContent"]);
 
 export const {
+  render,
   effect,
   memo,
   createComponent,
@@ -51,5 +33,98 @@ export const {
   spread,
   setProp,
   mergeProps,
-  use,
-} = solidRenderer;
+  use
+} = createRenderer({
+  createElement(type): ElementNode {
+    console.log(`createElement: [${type}]`);
+    const node = new ElementNode(type);
+    return node;
+  },
+  createTextNode(text) {
+    console.log(`createTextNode: [${text}]`);
+    return document.createTextNode(text);
+  },
+  replaceText(node, text) {
+    console.log(`replaceText: [${text}]`);
+    node.data = text;
+  },
+  insertNode(parent, node, anchor) {
+    console.log("@@@ insertNode")
+    console.log(parent);
+    console.log(node);
+    console.log(anchor);
+    const domParent = (parent.element) ?? parent;
+    const domNode = node.element;
+    const domAnchor = (anchor && anchor.element) ? anchor.element : anchor;
+    console.log("--- domParent");
+    console.log(domParent);
+    console.log("--- domNode");
+    console.log(domNode);
+    console.log("--- domAnchor");
+    console.log(domAnchor);
+    if(domNode && domParent && typeof domParent.insertBefore === 'function'){
+      try{
+        console.log("domParent.insertBefore ");
+        console.log(domNode);
+        domParent.insertBefore(domNode, domAnchor);
+        console.log("yeahhhh")
+      }catch(ex){
+        debugger;
+        console.log(ex);
+      }
+    }
+
+  },
+  removeNode(parent, node) {
+    parent.removeChild(node);
+  },
+  setProperty(node, name, value) {
+    console.log(`@@@ setProperty`);
+    console.log(node);
+    console.log(name);
+    console.log(value);
+    if (name === 'style'){
+      console.log(typeof value)
+      //@ts-ignore
+      node.setStyles(name, value);
+    }else if (name.startsWith('on')){
+       node[name.toLowerCase()] = value;
+    }else{
+      //@ts-ignore
+      node.setProperty(name, value);
+    }
+  },
+  isTextNode(node) {
+    console.log(node);
+    return node.type === 3;
+  },
+  getParentNode(node): ElementNode | undefined {
+    return node.parent;
+  },
+  getFirstChild(node): ElementNode | undefined {
+    return node.children[0];
+  },
+  getNextSibling(node) {
+    if(node.parent){
+      const children = node.parent.children;
+      const index = children.indexOf(node) + 1;
+      if(index > -1 && index < children.length){
+        return children[index];
+      }
+    }
+    return undefined;
+  },
+});
+
+export {
+  For,
+  Show,
+  Suspense,
+  SuspenseList,
+  Switch,
+  Match,
+  Index,
+  ErrorBoundary,
+  useContext
+} from "solid-js";
+

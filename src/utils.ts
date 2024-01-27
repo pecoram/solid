@@ -15,12 +15,57 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isInteger } from './core/utils.js';
+import { isInteger, isNumber } from './core/utils.js';
+
+
+export function isHexColor (hex: string) {
+  return typeof hex === 'string'
+      && hex.length === 6
+      && !isNaN(Number('0x' + hex))
+}
+
+export function argbToRgba(color: number): string | undefined{
+  if(!color || color.toString().length < 9){
+    return undefined;
+  }
+  const colorArray = []
+  for(let i=0; i<4; i++){
+    colorArray.push(color % 256)
+    color>>>=8
+  }
+  if(colorArray && colorArray.length > 3){
+    const alpha = colorArray.pop() / 255
+    return `rgba(${colorArray.reverse()},${alpha})`
+  }
+  return undefined;
+}
+
+
+export function stringToColor(color: string | number = '') : string | undefined {
+    console.log(`stringToColor: [${color}]`);
+    if(!color){
+      return undefined;
+    }
+    if(typeof color === 'string'){
+      if(isHexColor(color)){
+        console.log("yeah is color")
+        return color;
+      }
+    }
+    if(isNumber(color)){
+      if(color.toString().length > 8){
+        return argbToRgba(color);
+      }
+    }
+  return undefined;
+}
+
 
 /**
  * Converts a color string to a color number value.
  */
 export function hexColor(color: string | number = ''): number {
+  console.log(`hexColor: [${color}]`);
   if (isInteger(color)) {
     return color;
   }

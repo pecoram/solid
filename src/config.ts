@@ -17,12 +17,22 @@
  * limitations under the License.
  */
 
-import type { AnimationSettings } from '@lightningjs/renderer';
 import type { IntrinsicTextNodeStyleProps } from './intrinsicTypes.js';
 import { type ElementNode } from './core/node/index.js';
 
+export interface AnimationSettings {
+  duration: number;
+  delay: number;
+  easing: string;
+  loop: boolean;
+  repeat: number;
+  repeatDelay: number;
+  stopMethod: 'reverse' | 'reset' | false;
+}
+
 interface Config {
   debug: boolean;
+  animationsEnabled?: boolean;
   animationSettings: Partial<AnimationSettings>;
   fontSettings: Partial<IntrinsicTextNodeStyleProps>;
   stateMapperHook?: (node: ElementNode, states: Array<string>) => Array<string>;
@@ -33,6 +43,7 @@ export const isDev = import.meta.env.MODE === 'development';
 
 export const config: Config = {
   debug: false,
+  animationsEnabled: true,
   animationSettings: {
     duration: 250,
     easing: 'ease-in-out',

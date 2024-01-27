@@ -15,19 +15,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  type AnimationSettings,
-  type Dimensions,
-  type INode,
-  type INodeAnimatableProps,
-  type INodeWritableProps,
-  type ITextNodeWritableProps,
-  type NodeFailedPayload,
-  type NodeLoadedPayload,
-} from '@lightningjs/renderer';
 import { type JSX } from 'solid-js';
 import { type ElementNode } from './core/node/index.js';
 import type { NodeStates } from './core/node/states.js';
+import type { AnimationSettings } from './config.js';
 
 type AddUndefined<T> = {
   [K in keyof T]: T[K] | undefined;
@@ -57,10 +48,6 @@ export interface IntrinsicNodeCommonProps {
   forwardStates?: boolean;
   id?: string;
   onCreate?: (target: ElementNode) => void;
-  onLoad?: (target: INode, nodeLoadedPayload: NodeLoadedPayload) => void;
-  onFail?: (target: INode, nodeFailedPayload: NodeFailedPayload) => void;
-  onBeforeLayout?: (child: ElementNode, dimensions: Dimensions) => void;
-  onLayout?: (child: ElementNode, dimensions: Dimensions) => void;
   ref?: ElementNode | ((node: ElementNode | null) => void) | null;
   selected?: number;
   states?: NodeStates;
@@ -99,6 +86,10 @@ export interface IntrinsicTextStyleCommonProps {
   marginBottom?: number;
 }
 
+export type INodeAnimatableProps = HTMLStyleElement
+export type INodeWritableProps = HTMLStyleElement
+
+
 export type IntrinsicCommonProps = IntrinsicNodeCommonProps &
   IntrinsicNodeStyleCommonProps &
   IntrinsicTextStyleCommonProps;
@@ -107,21 +98,12 @@ export type TransformableNodeWritableProps = TransformAnimatableNumberProps<
   Omit<INodeAnimatableProps, 'zIndex' | 'zIndexLocked'>
 >;
 
-export interface IntrinsicNodeStyleProps
-  extends Partial<
-      Omit<
-        INodeWritableProps,
-        'parent' | 'shader' | keyof TransformableNodeWritableProps
-      >
-    >,
-    TransformableNodeWritableProps,
-    IntrinsicNodeStyleCommonProps {
+export interface IntrinsicNodeStyleProps{
   [key: string]: unknown;
 }
 
 export interface IntrinsicTextNodeStyleProps
-  extends Partial<Omit<ITextNodeWritableProps, 'parent' | 'shader'>>,
-    IntrinsicTextStyleCommonProps {
+  extends  IntrinsicTextStyleCommonProps {
   [key: string]: unknown;
 }
 
@@ -129,6 +111,10 @@ export interface IntrinsicNodeProps
   extends AddUndefined<IntrinsicNodeCommonProps & IntrinsicNodeStyleProps> {
   style?: IntrinsicNodeStyleProps | undefined;
   children?: JSX.Element | undefined;
+  width?: number;
+  height?: number;
+  color?: string | number | undefined;
+  src?: string | undefined;
 }
 
 export interface IntrinsicTextProps

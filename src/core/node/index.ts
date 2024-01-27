@@ -15,11 +15,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { renderer, createShader } from '../renderer/index.js';
 import {
   type AnimatableNumberProp,
   type BorderStyleObject,
   type IntrinsicCommonProps,
+  type IntrinsicNodeStyleProps,
   type NodeStyles,
   type TextStyles,
 } from '../../index.js';
@@ -34,31 +34,11 @@ import {
   keyExists,
   getAnimatableValue,
 } from '../utils.js';
-import { config } from '../../config.js';
+import { config, type AnimationSettings } from '../../config.js';
 import { setActiveElement } from '../activeElement.js';
-import type {
-  INode,
-  INodeAnimatableProps,
-  INodeWritableProps,
-  ShaderRef,
-  Dimensions,
-  AnimationSettings,
-  NodeLoadedPayload,
-} from '@lightningjs/renderer';
-import { assertTruthy } from '@lightningjs/renderer/utils';
 
 const { animationSettings: defaultAnimationSettings } = config;
 
-function convertEffectsToShader(styleEffects: any) {
-  const effects = [];
-
-  for (const [type, props] of Object.entries<Record<string, any>>(
-    styleEffects,
-  )) {
-    effects.push({ type, props });
-  }
-  return createShader('DynamicShader', { effects: effects as any });
-}
 
 function borderAccessor(
   direction: '' | 'Top' | 'Right' | 'Bottom' | 'Left' = '',
@@ -81,8 +61,9 @@ function borderAccessor(
   };
 }
 
-const LightningRendererNumberProps = [
+const StyleNumberProps = [
   'alpha',
+  'opacity',
   'color',
   'colorTop',
   'colorRight',
@@ -92,8 +73,6 @@ const LightningRendererNumberProps = [
   'colorTr',
   'colorBl',
   'colorBr',
-  'height',
-  'fontSize',
   'lineHeight',
   'mount',
   'mountX',
@@ -103,16 +82,13 @@ const LightningRendererNumberProps = [
   'pivotY',
   'rotation',
   'scale',
-  'width',
   'worldX',
   'worldY',
-  'x',
-  'y',
   'zIndex',
   'zIndexLocked',
 ];
 
-const LightningRendererNonAnimatingProps = [
+const StyleNonAnimatingProps = [
   'clipping',
   'contain',
   'fontFamily',
@@ -128,6 +104,11 @@ const LightningRendererNonAnimatingProps = [
   'wordWrap',
 ];
 
+const SupportPropertyStyle = [
+  "width",
+  "height"
+];
+
 export interface TextNode {
   name: string;
   text: string;
@@ -136,6 +117,7 @@ export interface TextNode {
   states?: States;
   x?: number;
   y?: number;
+  alpha? : number;
   width?: number;
   height?: number;
   marginLeft?: number;
@@ -148,8 +130,15 @@ export interface TextNode {
   _dom?: Text; // Public but uses _ prefix
 }
 
+
+
 export type SolidNode = ElementNode | TextNode;
 export type SolidStyles = NodeStyles | TextStyles;
+
+export interface Dimensions {
+  width:number;
+  height:number;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface ElementNode
@@ -158,10 +147,20 @@ export interface ElementNode
   [key: string]: unknown;
 }
 
+export const MapProps: Record<string,string> = {
+  "x": "left",
+  "y": "top",
+  "alpha": "opacity",
+  "color": "background-color"
+}
+
+
+
+
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class ElementNode extends Object {
   name: string;
-  lng: INode | null = null;
+  element: HTMLElement | undefined;
   selected?: number;
   rendered: boolean;
   autofocus: boolean;
@@ -169,8 +168,7 @@ export class ElementNode extends Object {
   private _undoStates?: Record<string, any>;
   private _renderProps: any;
   private _effects: any;
-  private _parent: ElementNode | null = null;
-  private _shader?: ShaderRef;
+  private _parent: ElementNode | undefined;
   private _style?: SolidStyles;
   private _states?: States;
   private _animationSettings?: Partial<AnimationSettings>;
@@ -186,11 +184,14 @@ export class ElementNode extends Object {
   public _animate?: boolean; // Public but uses _ prefix
   public _autosized?: boolean; // Public but uses _ prefix
   public _isDirty?: boolean; // Public but uses _ prefix
-  /**
-   * Managed by dom-inspector
-   */
+  public _src: string | undefined;
   public _dom?: HTMLDivElement; // Public but uses _ prefix
-  children: Children;
+  public children: Array<ElementNode> = [];
+
+  /**
+   * Private fields
+   */
+  private _img?: HTMLImageElement;
 
   constructor(name: string) {
     super();
@@ -198,31 +199,11 @@ export class ElementNode extends Object {
     this.rendered = false;
     this.autofocus = false;
     this._renderProps = { x: 0, y: 0 };
-    this.children = new Children(this);
-
-    for (const key of LightningRendererNumberProps) {
-      Object.defineProperty(this, key, {
-        get(): number {
-          return this[`_${key}`] || (this.lng && this.lng[key]);
-        },
-        set(v: number | AnimatableNumberProp) {
-          this[`_${key}`] = getAnimatableValue(v);
-          this._sendToLightningAnimatable(key, v);
-        },
-      });
-    }
-
-    for (const key of LightningRendererNonAnimatingProps) {
-      Object.defineProperty(this, key, {
-        get() {
-          return this[`_${key}`] || (this.lng && this.lng[key]);
-        },
-        set(v) {
-          this[`_${key}`] = v;
-          this._sendToLightning(key, v);
-        },
-      });
-    }
+    this.children = [];
+    this.element = document.createElement('div') ;
+    // this.element.style.position = 'absolute';
+    // this.element.style.width = '100%';
+    // this.element.style.height = '100%';
 
     // Add Border Helpers
     Object.defineProperties(this, {
@@ -261,13 +242,38 @@ export class ElementNode extends Object {
     });
   }
 
+  _createImageElement(element: HTMLElement): HTMLImageElement {
+      const img = document.createElement('img');
+      img.src = "";
+      img.style.resize = 'contain';
+      img.style.maxWidth = '100%';
+      img.style.maxHeight = '100%';
+      img.crossOrigin = "anonymous";
+      //downloadedImg.addEventListener("load", imageReceived, false);
+      element.append(img);
+      return img;
+   }
+
+  _attachImage (src: string | undefined){
+    if(!this.element){
+      return;
+    }
+    if(!this._img){
+      this._img = this._createImageElement(this.element);
+    }
+    if(this._src !== src){
+      this._img.src = src ?? '';
+    }
+    this._src = src;
+  }
+
+
   get effects() {
     return this._effects;
   }
 
   set effects(v) {
     this._effects = v;
-    this.shader = convertEffectsToShader(v);
   }
 
   get parent() {
@@ -276,112 +282,128 @@ export class ElementNode extends Object {
 
   set parent(p) {
     this._parent = p;
-    if (this.rendered && this.lng) {
-      this.lng.parent = p?.lng ?? null;
-    }
   }
 
-  get shader(): ShaderRef | undefined {
-    return this._shader;
+  createAnimation(){
+
   }
 
-  set shader(v: Parameters<typeof createShader> | ShaderRef | undefined) {
-    if (isArray(v)) {
-      this._shader = createShader(...v) as ShaderRef;
-    } else {
-      this._shader = v;
-    }
-    this._sendToLightning('shader', this._shader);
+  removeChild(node:ElementNode){
+
   }
 
-  _sendToLightningAnimatable(
-    name: string,
-    value: AnimatableNumberProp | number | string,
-  ) {
-    if (this.rendered && this.lng) {
-      if (isArray(value)) {
-        return this.createAnimation({ [name]: value[0] }, value[1]).start();
-      }
-
-      if (this._animate) {
-        return this.createAnimation({ [name]: value }).start();
-      }
-
-      (this.lng[name as keyof INode] as number | string) = value;
-    } else {
-      // Need to render before animating
-      if (isArray(value)) {
-        value = value[0];
-      }
-      this._renderProps[name] = value;
-    }
+  getParentNode(){
+    return this._parent;
+  }
+  getFirstChild(): ElementNode | undefined {
+    return this.children[0]
   }
 
-  _sendToLightning(name: string, value: unknown) {
-    if (this.rendered && this.lng) {
-      (this.lng[name as keyof INodeWritableProps] as unknown) = value;
-    } else {
-      this._renderProps[name] = value;
-    }
-  }
-
-  createAnimation(
-    props: Partial<INodeAnimatableProps>,
-    animationSettings?: Partial<AnimationSettings>,
-  ) {
-    assertTruthy(this.lng, 'Node must be rendered before animating');
-    return this.lng.animate(props, animationSettings || this.animationSettings);
-  }
-
-  setFocus() {
-    if (this.rendered) {
-      // Delay setting focus so children can render (useful for Row + Column)
-      queueMicrotask(() => setActiveElement<ElementNode>(this));
-    } else {
-      this.autofocus = true;
-    }
-  }
 
   isTextNode() {
     return this.name === 'text';
   }
 
-  _resizeOnTextLoad() {
-    this.lng!.once(
-      'loaded',
-      (_node: INode, loadedPayload: NodeLoadedPayload) => {
-        if (loadedPayload.type === 'text') {
-          const { dimensions } = loadedPayload;
-
-          this.width = dimensions.width;
-          this.height = dimensions.height;
-          this.parent!.updateLayout(this, dimensions);
-        }
-      },
-    );
-  }
-
-  getText() {
-    return this.children.map((c) => c.text).join('');
-  }
-
   destroy() {
-    this.lng && renderer.destroyNode(this.lng);
+
   }
 
-  set style(value: SolidStyles) {
-    // Keys set in JSX are more important
-    for (let key in value) {
-      if (key === 'animate') {
-        key = '_animate';
+  convertPixelValue(value: string | number | undefined){
+    if(typeof value === 'string'){
+      return value;
+    }
+    if(isNumber(value)){
+      return `${value}px`;
+    }
+    return value;
+  }
+
+
+  setProperty(name: string, value: string | number | undefined){
+    const domElement = this.element
+    if(!domElement){
+      return;
+    }
+    switch(name.toLowerCase()){
+      case 'src':{
+        if(typeof value === 'string'){
+          this._attachImage(value);
+        }else{
+          this._attachImage(undefined);
+        }
+        break;
+      }
+      default:{
+          //@ts-ignore
+          console.log("==============");
+          console.log("--  setProperty ---")
+          console.log(`name: [${name}]`);
+          console.log(value);
+          console.log("==============");
+          if(SupportPropertyStyle.includes(name)){
+            //@ts-ignore
+            this.setStyles(name, value);
+          }else{
+            this[name] = value;
+          }
+
+          break;
       }
 
-      if (!this[key as keyof SolidStyles]) {
-        this[key as keyof SolidStyles] = value[key as keyof SolidStyles];
-      }
+    }
+  }
+
+
+  remapKeyStyle(key:string): string{
+    return MapProps[key] ?? key;
+  }
+
+  setStyle(name: string, value: string | number | undefined){
+    if(!this.element){
+      return;
+    }
+    let val = value;
+    const key = this.remapKeyStyle(name) ?? name;
+    if(!StyleNumberProps.includes(key) && !StyleNumberProps.includes(name)){
+      val = this.convertPixelValue(val);
+    }
+    console.log(`######## [${key}] ==> ${val} `);
+    switch(key){
+       case 'clipping':{
+        this.element.style.overflow = "hidden";
+        break;
+       }
+       default:{
+        try{
+          //@ts-ignore
+          this.element.style[key] = val;
+        }catch(ex){
+          debugger;
+          console.log(ex);
+        }
+        break;
+       }
     }
 
-    this._style = value;
+
+  }
+
+  setStyles(name: string, value: object | string | number | undefined){
+    console.log("==============");
+    console.log("--  setStyles ---")
+    console.log(`name: [${name}]`);
+    console.log(value);
+    console.log("==============");
+    if(!this.element){
+      return;
+    }
+    if(value && value instanceof Object){
+      for(const [k, v] of Object.entries(value)){
+        this.setStyle(k,v);
+      }
+    }else{
+      this.setStyle(name, value);
+    }
   }
 
   get style(): SolidStyles {
@@ -410,18 +432,6 @@ export class ElementNode extends Object {
 
   set animationSettings(animationSettings: Partial<AnimationSettings>) {
     this._animationSettings = animationSettings;
-  }
-
-  _applyZIndexToChildren() {
-    const zIndex = this.zIndex!;
-    const zIndexIsInteger = zIndex >= 1 && parseInt('' + zIndex) === zIndex;
-    const decimalSeparator = zIndexIsInteger ? '.' : '';
-
-    this.children.forEach((c, i) => {
-      if (!c.zIndex || c.zIndex < 1) {
-        c.zIndex = parseFloat(`${zIndex}${decimalSeparator}${i + 1}`);
-      }
-    });
   }
 
   updateLayout(child?: ElementNode, dimensions?: Dimensions) {
@@ -490,106 +500,6 @@ export class ElementNode extends Object {
   }
 
   render() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const node = this;
-    const parent = this.parent!;
 
-    // Parent is dirty whenever a node is inserted after initial render
-    if (parent._isDirty) {
-      parent.updateLayout();
-      parent._applyZIndexToChildren();
-      parent._isDirty = false;
-    }
-
-    node.updateLayout();
-
-    if (this.states.length) {
-      this._stateChanged();
-    }
-
-    let props = node._renderProps;
-
-    if (parent.lng) {
-      props.parent = parent.lng;
-    }
-
-    if (node.isTextNode()) {
-      props = {
-        ...config.fontSettings,
-        ...props,
-        text: node.getText(),
-      };
-
-      if (props.contain) {
-        if (!props.width) {
-          props.width =
-            (parent.width || 0) - props.x - (props.marginRight || 0);
-          node._width = props.width;
-          node._autosized = true;
-        }
-
-        // if (!props.height && props.contain === 'both') {
-        //   props.height =
-        //     (parent.height || 0) - props.y - (props.marginBottom || 0);
-        //   node._height = props.height;
-        //   node._autosized = true;
-        // }
-      }
-
-      log('Rendering: ', this, props);
-      node.lng = renderer.createTextNode(props);
-
-      isFunc(this.onCreate) && this.onCreate.call(this, node);
-
-      if (isFunc(node.onLoad)) {
-        node.lng.on('loaded', node.onLoad);
-      }
-
-      if (!node.width || !node.height) {
-        node._autosized = true;
-        node._resizeOnTextLoad();
-      }
-    } else {
-      // If its not an image or texture apply some defaults
-      if (!(props.src || props.texture)) {
-        // Set width and height to parent less offset
-        if (isNaN(props.width)) {
-          props.width = (parent.width || 0) - props.x;
-          node._width = props.width;
-          node._autosized = true;
-        }
-
-        if (isNaN(props.height)) {
-          props.height = (parent.height || 0) - props.y;
-          node._height = props.height;
-          node._autosized = true;
-        }
-
-        if (!props.color) {
-          // Default color to transparent - If you later set a src, you'll need
-          // to set color '#ffffffff'
-          node._color = props.color = 0x00000000;
-        }
-      }
-
-      log('Rendering: ', this, props);
-      node.hasChildren && node._applyZIndexToChildren();
-      node.lng = renderer.createNode(props);
-
-      if (node.onFail) {
-        node.lng.on('failed', node.onFail);
-      }
-
-      if (node.onLoad) {
-        node.lng.on('loaded', node.onLoad);
-      }
-
-      isFunc(this.onCreate) && this.onCreate.call(this, node);
-    }
-
-    node.rendered = true;
-    node.autofocus && node.setFocus();
-    // clean up after first render;
-    delete this._renderProps;
   }
 }
