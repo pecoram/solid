@@ -56,20 +56,14 @@ export const {
     const domParent = (parent.element) ?? parent;
     const domNode = node.element;
     const domAnchor = (anchor && anchor.element) ? anchor.element : anchor;
-    console.log("--- domParent");
-    console.log(domParent);
-    console.log("--- domNode");
-    console.log(domNode);
-    console.log("--- domAnchor");
-    console.log(domAnchor);
     if(domNode && domParent && typeof domParent.insertBefore === 'function'){
       try{
         console.log("domParent.insertBefore ");
         console.log(domNode);
         domParent.insertBefore(domNode, domAnchor);
+        node.insertNode(parent, anchor);
         console.log("yeahhhh")
       }catch(ex){
-        debugger;
         console.log(ex);
       }
     }
@@ -88,7 +82,7 @@ export const {
       //@ts-ignore
       node.setStyles(name, value);
     }else if (name.startsWith('on')){
-       node[name.toLowerCase()] = value;
+      node[name.toLowerCase()] = value;
     }else{
       //@ts-ignore
       node.setProperty(name, value);

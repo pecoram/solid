@@ -86,9 +86,8 @@ export interface IntrinsicTextStyleCommonProps {
   marginBottom?: number;
 }
 
-export type INodeAnimatableProps = HTMLStyleElement
-export type INodeWritableProps = HTMLStyleElement
-
+export type INodeAnimatableProps = HTMLStyleElement;
+export type INodeWritableProps = HTMLStyleElement;
 
 export type IntrinsicCommonProps = IntrinsicNodeCommonProps &
   IntrinsicNodeStyleCommonProps &
@@ -98,12 +97,12 @@ export type TransformableNodeWritableProps = TransformAnimatableNumberProps<
   Omit<INodeAnimatableProps, 'zIndex' | 'zIndexLocked'>
 >;
 
-export interface IntrinsicNodeStyleProps{
+export interface IntrinsicNodeStyleProps {
   [key: string]: unknown;
 }
 
 export interface IntrinsicTextNodeStyleProps
-  extends  IntrinsicTextStyleCommonProps {
+  extends IntrinsicTextStyleCommonProps {
   [key: string]: unknown;
 }
 
@@ -115,6 +114,8 @@ export interface IntrinsicNodeProps
   height?: number;
   color?: string | number | undefined;
   src?: string | undefined;
+  position?: string | undefined;
+  hide?: boolean;
 }
 
 export interface IntrinsicTextProps
