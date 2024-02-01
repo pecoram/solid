@@ -18,12 +18,12 @@
 import {
   type AnimatableNumberProp,
   type BorderStyleObject,
+  type INodeAnimatableProps,
   type IntrinsicCommonProps,
   type IntrinsicNodeStyleProps,
   type NodeStyles,
   type TextStyles,
 } from '../../index.js';
-import Children from './children.js';
 import States, { type NodeStates } from './states.js';
 import calculateFlex from '../flex.js';
 import {
@@ -36,6 +36,7 @@ import {
 } from '../utils.js';
 import { config, type AnimationSettings } from '../../config.js';
 import { setActiveElement } from '../activeElement.js';
+import Children from './children.js';
 
 const { animationSettings: defaultAnimationSettings } = config;
 
@@ -85,6 +86,15 @@ const StyleNumberProps = [
   'worldY',
   'zIndex',
   'zIndexLocked',
+];
+
+const StylePixelProps = [
+  'x',
+  'y',
+  'top',
+  'left',
+  'width',
+  'height'
 ];
 
 const StyleNonAnimatingProps = [
@@ -148,6 +158,11 @@ export const MapProps: Record<string, string> = {
   color: 'background-color',
 };
 
+
+// const animationTransition{
+//   transition": "width 2s, height 4s";
+// }
+
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class ElementNode extends Object {
   name: string;
@@ -155,6 +170,12 @@ export class ElementNode extends Object {
   selected?: number;
   rendered: boolean;
   autofocus: boolean;
+
+  parentNode: ElementNode | null;
+  nextSibling: ElementNode | undefined;
+  prevSibling: ElementNode | undefined;
+  childNodes: ElementNode[];
+  firstChild: ElementNode | undefined;
 
   private _undoStates?: Record<string, any>;
   private _renderProps: any;
@@ -177,7 +198,8 @@ export class ElementNode extends Object {
   public _isDirty?: boolean; // Public but uses _ prefix
   public _src: string | undefined;
   public _dom?: HTMLDivElement; // Public but uses _ prefix
-  public children: Array<ElementNode> = [];
+  public _domImage?: HTMLImageElement;
+  public children: Children ;
 
   /**
    * Private fields
@@ -190,11 +212,13 @@ export class ElementNode extends Object {
     this.rendered = false;
     this.autofocus = false;
     this._renderProps = { x: 0, y: 0 };
-    this.children = [];
+    this.children = new Children(this);
+    this.childNodes = [];
+    this.parentNode = null;
+    this.firstChild = undefined;
+    this.nextSibling = undefined;
+    this.prevSibling = undefined;
     this.element = document.createElement('div');
-    this.element?.addEventListener("mouseover", () => {
-      //this.setFocus()
-    });
     // this.element.style.position = 'absolute';
     // this.element.style.width = '100%';
     // this.element.style.height = '100%';
@@ -202,14 +226,42 @@ export class ElementNode extends Object {
   }
 
   _bindProps = () => {
+
+    for (const key of StylePixelProps) {
+      Object.defineProperty(this, key, {
+        get(): number {
+          switch(key){
+            case 'x':
+            case 'left':{
+              return this[`_${key}`] ?? this.element?.offsetLeft;
+            }
+            case 'y':
+            case 'top':{
+              return this[`_${key}`] ?? this.element?.offsetTop;
+            }
+            default:{
+              return this[`_${key}`];
+            }
+          }
+
+        },
+        set(v: number | AnimatableNumberProp) {
+          const value = getAnimatableValue(v);
+          this[`_${key}`] = v;
+          this.setStyle(key, value);
+        },
+      });
+    }
+
     for (const key of StyleNumberProps) {
       Object.defineProperty(this, key, {
         get(): number {
           return this[`_${key}`] || (this.lng && this.lng[key]);
         },
         set(v: number | AnimatableNumberProp) {
+          const value = getAnimatableValue(v);
           this[`_${key}`] = getAnimatableValue(v);
-          this.setStyles(key, v);
+          this.setStyles(key, value);
         },
       });
     }
@@ -262,30 +314,47 @@ export class ElementNode extends Object {
     });
   };
 
-  _createImageElement(element: HTMLElement): HTMLImageElement {
-    const img = document.createElement('img');
-    img.src = '';
-    img.style.resize = 'contain';
-    img.style.maxWidth = '100%';
-    img.style.maxHeight = '100%';
-    img.crossOrigin = 'anonymous';
-    //downloadedImg.addEventListener("load", imageReceived, false);
-    element.append(img);
-    return img;
+  _createImageElement() {
+    if(!this.element){
+      return;
+    }
+    this._domImage = document.createElement('img');
+    this._domImage.style.resize = 'contain';
+    this._domImage.style.width = '100%';
+    this._domImage.style.height = '100%';
+    this._domImage.crossOrigin = 'anonymous';
+    this._domImage.loading = "lazy";
+    this.element.append(this._domImage);
   }
 
   _attachImage(src: string | undefined) {
     if (!this.element) {
       return;
     }
-    if (!this._img) {
-      this._img = this._createImageElement(this.element);
+    if (!this._domImage) {
+      this._createImageElement();
     }
-    if (this._src !== src) {
-      this._img.src = src ?? '';
+    if(this._domImage){
+      const img = this._domImage;
+      this._domImage.onload = () => {
+        if(typeof this['onLoad'] === 'function'){
+          const w = img?.width ?? 0;
+          const h = img?.height ?? 0;
+          this.onLoad(this, {type: 'texture',  dimensions:{width: w, height: h}});
+        }
+      };
+      this._domImage.onerror = (error) => {
+        console.log("@@@@@ this._domImage.onerror");
+        console.log(error);
+        if(typeof this['onFail'] === 'function'){
+          this.onFail(this, {type: 'texture',  error: error ?? new Error("error load image")});
+        }
+      }
+      this._domImage.src = src ?? "";
     }
     this._src = src;
   }
+
 
   get effects() {
     return this._effects;
@@ -303,15 +372,40 @@ export class ElementNode extends Object {
     this._parent = p;
   }
 
-  createAnimation() {}
 
-  removeChild(node: ElementNode) {}
-
-  insertNode(parent, anchor){
-    this.rendered = true;
-    this.render();
+  createAnimation(
+    props: Partial<INodeAnimatableProps>,
+    animationSettings?: Partial<AnimationSettings>,
+  ) {
+    // this.setStyle('transition-property',"opacity, left, top");
+    // this.setStyle('transition-duration',"0.2s, 0.1s, 0.1s");
+    //this.setStyle('transition-timing-function', "ease-in-out");
   }
 
+  createAnimations() {
+    // this.setStyle('transition-property',"opacity, left, top");
+    // this.setStyle('transition-duration',"0.2s, 0.1s, 0.1s");
+    //this.setStyle('transition-timing-function', "ease-in-out");
+  }
+  removeChild(node: ElementNode) {
+    try{
+      this.children.remove(node);
+    }catch(ex){
+      console.log(ex)
+    }finally{
+      this.rendered = true;
+    }
+  }
+
+  insertNode(node: ElementNode, anchor: ElementNode | null) {
+    try{
+      this.children.insert(node, anchor);
+    }catch(ex){
+      console.log(ex)
+    }finally{
+      this.rendered = true;
+    }
+  }
 
   getParentNode() {
     return this._parent;
@@ -336,12 +430,16 @@ export class ElementNode extends Object {
     return value;
   }
 
-  setProperty(name: string, value: string | number | boolean| undefined) {
+  setProperty(name: string, value: string | number | boolean | undefined) {
     const domElement = this.element;
     if (!domElement) {
       return;
     }
-    switch (name.toLowerCase()) {
+    const property = name.toLowerCase().trim();
+    if (!property) {
+      return;
+    }
+    switch (property) {
       case 'src': {
         if (typeof value === 'string') {
           this._attachImage(value);
@@ -350,19 +448,23 @@ export class ElementNode extends Object {
         }
         break;
       }
-      case 'animate':{
-
+      case 'animate': {
+        this.createAnimations();
         break;
       }
-      case 'selected':{
-        if(isNumber(value)){
-          this.selected = value
+      case 'selected': {
+        if (isNumber(value)) {
+          this.selected = value;
         }
         break;
       }
-      case 'autofocus':{
-        this.autofocus = Boolean(value) ?? false;
-        this.render();
+      case 'autofocus': {
+        if(typeof value == "boolean"){
+          this.autofocus = value || false;
+          if(this.autofocus){
+            this.setFocus();
+          }
+        }
         break;
       }
       case 'clipping': {
@@ -370,19 +472,10 @@ export class ElementNode extends Object {
         break;
       }
       default: {
-        //@ts-ignore
-        console.log('==============');
-        console.log('--  setProperty ---');
-        console.log(`name: [${name}]`);
-        console.log(value);
-        console.log('==============');
         if (SupportPropertyStyle.includes(name)) {
           //@ts-ignore
           this.setStyle(name, value);
-        } else {
-          this[name] = value;
         }
-
         break;
       }
     }
@@ -398,10 +491,9 @@ export class ElementNode extends Object {
     }
     let val = value;
     const key = this.remapKeyStyle(name) ?? name;
-    if (!StyleNumberProps.includes(key) && !StyleNumberProps.includes(name)) {
+    if (StylePixelProps.includes(key)) {
       val = this.convertPixelValue(val);
     }
-    console.log(`######## [${key}] ==> ${val} `);
     switch (key) {
       // case 'opacity': {
       //   if(isNumber(val) && val <= 0){
@@ -414,8 +506,7 @@ export class ElementNode extends Object {
           //@ts-ignore
           this.element.style[key] = val;
         } catch (ex) {
-          debugger;
-          console.log(ex);
+            console.log(ex);
         }
         break;
       }
@@ -424,11 +515,6 @@ export class ElementNode extends Object {
 
   setFocus() {
     if (this.element && this.rendered) {
-      console.error("=====================");
-      console.error(`@@@@@ autofocus: [${this.selected}]`);
-      console.error(this);
-      this.element.style.background = 'red';
-      (typeof this.onfocus === 'function') && this.onfocus();
       queueMicrotask(() => setActiveElement<ElementNode>(this));
     } else {
       this.autofocus = true;
@@ -436,11 +522,6 @@ export class ElementNode extends Object {
   }
 
   setStyles(name: string, value: object | string | number | undefined) {
-    console.log('==============');
-    console.log('--  setStyles ---');
-    console.log(`name: [${name}]`);
-    console.log(value);
-    console.log('==============');
     if (!this.element) {
       return;
     }
@@ -546,13 +627,4 @@ export class ElementNode extends Object {
     }
   }
 
-  render(){
-    if(!this.rendered){
-      return;
-    }
-
-    if(this.autofocus){
-      this.setFocus();
-    }
-  }
 }

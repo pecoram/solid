@@ -34,12 +34,15 @@ export interface CanvasProps {
 
 export const Canvas = (props: CanvasProps) => {
   let root: HTMLDivElement | undefined;
+  const zoom = Math.min(props.options?.deviceLogicalPixelRatio ?? 1, 3);
+
+  console.log(`@@@@@ zoom: [${zoom}]`)
 
   createEffect(() => {
     isFunc(props.onFirstRender) && props.onFirstRender(root);
   })
   return (
-    <div ref={root} style={{inset:0, padding:0, width:'100vw', height:'100vh', background:'#000'}}>
+    <div ref={root} domStyle={{position:"fixed",top:0, left:0, right:0, bottom:0,inset:0, padding:0, margin:0, background:'#000', zoom:zoom}}>
       {props.children}
     </div>
   )

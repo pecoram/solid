@@ -36,77 +36,80 @@ export const {
   use
 } = createRenderer({
   createElement(type): ElementNode {
-    console.log(`createElement: [${type}]`);
+    //console.log(`createElement: [${type}]`);
     const node = new ElementNode(type);
     return node;
   },
   createTextNode(text) {
-    console.log(`createTextNode: [${text}]`);
+    //console.log(`createTextNode: [${text}]`);
     return document.createTextNode(text);
   },
   replaceText(node, text) {
-    console.log(`replaceText: [${text}]`);
-    node.data = text;
+    //console.log(`replaceText: [${text}]`);
+    //node.data = text;
   },
   insertNode(parent, node, anchor) {
-    console.log("@@@ insertNode")
-    console.log(parent);
-    console.log(node);
-    console.log(anchor);
     const domParent = (parent.element) ?? parent;
     const domNode = node.element;
     const domAnchor = (anchor && anchor.element) ? anchor.element : anchor;
     if(domNode && domParent && typeof domParent.insertBefore === 'function'){
       try{
-        console.log("domParent.insertBefore ");
-        console.log(domNode);
+        //console.log("domParent.insertBefore ");
+        //console.log(domNode);
         domParent.insertBefore(domNode, domAnchor);
-        node.insertNode(parent, anchor);
-        console.log("yeahhhh")
+        if(parent instanceof ElementNode && node instanceof ElementNode){
+          parent.insertNode(node, anchor ?? null);
+        }
+        //console.log("yeahhhh")
       }catch(ex){
-        console.log(ex);
+        //console.log(ex);
       }
     }
 
   },
   removeNode(parent, node) {
-    parent.removeChild(node);
+    const domParent = (parent.element) ?? parent;
+    const domNode = node.element;
+    if(domNode && domParent){
+      try{
+        //@ts-ignore
+        //domParent.remove(domNode);
+        if(parent instanceof ElementNode && node instanceof ElementNode){
+          parent.removeChild(node);
+        }
+        //console.log("yeahhhh")
+      }catch(ex){
+        console.log(ex);
+      }
+    }
   },
   setProperty(node, name, value) {
-    console.log(`@@@ setProperty`);
-    console.log(node);
-    console.log(name);
-    console.log(value);
-    if (name === 'style'){
-      console.log(typeof value)
+    if (name === 'domStyle'){
+      //console.log(typeof value)
       //@ts-ignore
       node.setStyles(name, value);
     }else if (name.startsWith('on')){
-      node[name.toLowerCase()] = value;
+       node[name] = value;
     }else{
       //@ts-ignore
-      node.setProperty(name, value);
+      if(name !== 'style'){
+        node.setProperty(name, value);
+        node[name] = value;
+      }
     }
   },
   isTextNode(node) {
-    console.log(node);
+    //console.log(node);
     return node.type === 3;
   },
   getParentNode(node): ElementNode | undefined {
     return node.parent;
   },
   getFirstChild(node): ElementNode | undefined {
-    return node.children[0];
+    return node.firstChild;
   },
   getNextSibling(node) {
-    if(node.parent){
-      const children = node.parent.children;
-      const index = children.indexOf(node) + 1;
-      if(index > -1 && index < children.length){
-        return children[index];
-      }
-    }
-    return undefined;
+    return node.nextSibling;
   },
 });
 

@@ -65,7 +65,6 @@ export function stringToColor(color: string | number = '') : string | undefined 
  * Converts a color string to a color number value.
  */
 export function hexColor(color: string | number = ''): number {
-  console.log(`hexColor: [${color}]`);
   if (isInteger(color)) {
     return color;
   }

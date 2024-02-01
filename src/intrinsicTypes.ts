@@ -109,6 +109,7 @@ export interface IntrinsicTextNodeStyleProps
 export interface IntrinsicNodeProps
   extends AddUndefined<IntrinsicNodeCommonProps & IntrinsicNodeStyleProps> {
   style?: IntrinsicNodeStyleProps | undefined;
+  domStyle?: JSX.CSSProperties | undefined;
   children?: JSX.Element | undefined;
   width?: number;
   height?: number;
