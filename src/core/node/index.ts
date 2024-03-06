@@ -535,10 +535,10 @@ export class ElementNode extends Object {
   render() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const node = this;
-    const parent = this.parent!;
+    const parent = this.parent;
 
     // Parent is dirty whenever a node is inserted after initial render
-    if (parent._isDirty) {
+    if (parent?._isDirty) {
       parent.updateLayout();
       parent._isDirty = false;
     }
@@ -551,7 +551,7 @@ export class ElementNode extends Object {
 
     let props = node._renderProps as IntrinsicNodeProps | IntrinsicTextProps;
 
-    if (parent.lng) {
+    if (parent?.lng) {
       props.parent = parent.lng;
     }
 
@@ -565,14 +565,14 @@ export class ElementNode extends Object {
       if (props.contain) {
         if (!props.width) {
           props.width =
-            (parent.width || 0) - (props.x || 0) - (props.marginRight || 0);
+            (parent?.width || 0) - (props.x || 0) - (props.marginRight || 0);
           node._width = props.width;
           node._autosized = true;
         }
 
         if (props.contain === 'both' && !props.height && !props.maxLines) {
           props.height =
-            (parent.height || 0) - (props.y || 0) - (props.marginBottom || 0);
+            (parent?.height || 0) - (props.y || 0) - (props.marginBottom || 0);
           node._height = props.height;
           node._autosized = true;
         }
@@ -596,13 +596,13 @@ export class ElementNode extends Object {
       if (!props.texture) {
         // Set width and height to parent less offset
         if (isNaN(props.width as number)) {
-          props.width = (parent.width || 0) - (props.x || 0);
+          props.width = (parent?.width || 0) - (props.x || 0);
           node._width = props.width;
           node._autosized = true;
         }
 
         if (isNaN(props.height as number)) {
-          props.height = (parent.height || 0) - (props.y || 0);
+          props.height = (parent?.height || 0) - (props.y || 0);
           node._height = props.height;
           node._autosized = true;
         }
