@@ -545,7 +545,7 @@ export class ElementNode extends Object {
     }
 
     if (this.rendered) {
-      console.warn('Node already rendered: ', this);
+      // console.warn('Node already rendered: ', this);
       return;
     }
 
