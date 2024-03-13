@@ -415,7 +415,7 @@ export class ElementNode extends Object {
           this.width = dimensions.width;
           this.height = dimensions.height;
         }
-        this.parent!.updateLayout(this, dimensions);
+        this.parent?.updateLayout(this, dimensions);
       }
     });
   }
@@ -425,7 +425,9 @@ export class ElementNode extends Object {
   }
 
   destroy() {
-    this.lng && renderer.destroyNode(this.lng);
+    if (this.lng) {
+      this.lng.destroy();
+    }
   }
 
   set style(values: SolidStyles | (SolidStyles | undefined)[]) {
@@ -537,8 +539,13 @@ export class ElementNode extends Object {
     const node = this;
     const parent = this.parent;
 
-    // prevents Too many redirects error
     if (!parent) {
+      console.warn('Parent not set - no node created for: ', this);
+      return;
+    }
+
+    if (this.rendered) {
+      console.warn('Node already rendered: ', this);
       return;
     }
 
@@ -634,8 +641,6 @@ export class ElementNode extends Object {
     }
 
     node.rendered = true;
-    node.autofocus && node.setFocus();
-
     // L3 Inspector adds div to the lng object
     //@ts-expect-error - div is not in the typings
     if (node.lng.div) {
@@ -644,5 +649,15 @@ export class ElementNode extends Object {
     }
     // clean up after first render;
     delete this._renderProps;
+
+    if (node.name !== 'text') {
+      node.children.forEach((c) => {
+        if ((c as ElementNode).render) {
+          (c as ElementNode).render();
+        }
+      });
+    }
+
+    node.autofocus && node.setFocus();
   }
 }

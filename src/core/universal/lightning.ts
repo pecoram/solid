@@ -16,9 +16,7 @@
  */
 import { assertTruthy } from '@lightningjs/renderer/utils';
 import { renderer } from '../renderer/index.js';
-import { onMount } from 'solid-js';
 import { log } from '../utils.js';
-import { config } from '../../config.js';
 import { ElementNode, type SolidNode, type TextNode } from '../node/index.js';
 import type { createRenderer } from 'solid-js/universal';
 
@@ -32,7 +30,7 @@ export type SolidRendererOptions = Parameters<
  * @param {SolidNode} node - the node
  * @return {void}
  */
-function removeChildrenNode(node: SolidNode) {
+export function removeChildrenNode(node: SolidNode) {
   if (node instanceof ElementNode) {
     for (const children of node.children ?? []) {
       removeChildrenNode(children);
@@ -44,7 +42,6 @@ function removeChildrenNode(node: SolidNode) {
 export default {
   createElement(name: string): ElementNode {
     const node = new ElementNode(name);
-    renderer.root && onMount(() => node.render());
     return node;
   },
   createTextNode(text: string): TextNode {
@@ -71,6 +68,11 @@ export default {
         if (parent.isTextNode()) {
           parent.text = parent.getText();
         }
+        return;
+      }
+
+      if (renderer.root && parent.rendered && (node as ElementNode).render) {
+        (node as ElementNode).render();
       }
     }
   },
@@ -80,13 +82,6 @@ export default {
   removeNode(parent: ElementNode, node: SolidNode): void {
     log('REMOVE: ', parent, node);
     parent.children.remove(node);
-    if (node instanceof ElementNode) {
-      if (config.enableRecursiveRemoval) {
-        removeChildrenNode(node);
-      } else {
-        node.destroy();
-      }
-    }
   },
   getParentNode(node: SolidNode): ElementNode | undefined {
     return node.parent;
