@@ -53,6 +53,8 @@ export default class Children extends Array<SolidNode> {
     const nodeIndexToRemove = this.indexOf(node);
     if (nodeIndexToRemove >= 0) {
       this.splice(nodeIndexToRemove, 1);
+      // Dont remove from parent as that causes extra work
+      node._queueDelete = true;
     }
   }
 }
