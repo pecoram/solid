@@ -459,7 +459,6 @@ export class ElementNode extends Object {
       if (isFunc(this.onBeforeLayout)) {
         changedLayout = this.onBeforeLayout.call(
           this,
-          this,
           child,
           dimensions,
         ) as boolean;
@@ -473,8 +472,7 @@ export class ElementNode extends Object {
         this.parent?.updateLayout();
       }
 
-      isFunc(this.onLayout) &&
-        this.onLayout.call(this, this, child, dimensions);
+      isFunc(this.onLayout) && this.onLayout.call(this, child, dimensions);
     }
   }
 
